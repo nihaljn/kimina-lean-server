@@ -3,7 +3,6 @@ import json
 import os
 import platform
 import signal
-import tempfile
 from asyncio.subprocess import Process
 from datetime import datetime
 from uuid import UUID, uuid4
@@ -75,7 +74,6 @@ class Repl:
         self.header_cmd_response: ReplResponse | None = None
 
         self.proc: Process | None = None
-        self.error_file = tempfile.TemporaryFile("w+")
         self.max_memory_bytes = max_repl_mem * 1024 * 1024
         self.max_repl_uses = max_repl_uses
 
@@ -295,19 +293,27 @@ class Repl:
         elapsed = loop.time() - start
 
         logger.debug("Raw response from REPL: %r", raw)
+        stderr_out = ""
+        if self.proc.stderr:
+            try:
+                stderr_bytes = await asyncio.wait_for(
+                    self.proc.stderr.read(8192), timeout=1.0
+                )
+                stderr_out = stderr_bytes.decode("utf-8", errors="replace").strip()
+            except (asyncio.TimeoutError, Exception):
+                pass
+
         try:
             resp: CommandResponse | Error = json.loads(raw)
         except json.JSONDecodeError:
-            logger.error("JSON decode error: %r", raw)
-            raise ReplError("JSON decode error")
+            raw_str = raw.decode("utf-8", errors="replace").strip()
+            detail = stderr_out or raw_str or "no output"
+            logger.error("JSON decode error — raw: {}  stderr: {}", repr(raw_str), repr(stderr_out))
+            raise ReplError(f"JSON decode error: {detail}")
 
-        self.error_file.seek(0)
-        err = self.error_file.read().strip()
-        self.error_file.seek(0)
-        self.error_file.truncate(0)
-        if err:
-            logger.error("Stderr: %s", err)
-            raise LeanError(err)
+        if stderr_out:
+            logger.error("Stderr: %s", stderr_out)
+            raise LeanError(stderr_out)
 
         elapsed_time = round(elapsed, 6)
         diagnostics: Diagnostics = {

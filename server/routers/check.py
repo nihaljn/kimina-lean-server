@@ -154,9 +154,14 @@ async def run_checks(
                 )
                 return resp
             except Exception as e:
-                logger.exception("Snippet execution failed")
+                logger.warning("Snippet execution failed (REPL crash): {}", str(e))
+                uuid_hex = repl.uuid.hex
                 await manager.destroy_repl(repl)
-                raise HTTPException(500, str(e)) from e
+                return ReplResponse(
+                    id=snippet.id,
+                    error=str(e),
+                    diagnostics={"repl_uuid": uuid_hex},
+                )
             else:
                 logger.info(
                     "[{}] Response for [bold magenta]{}[/bold magenta] body →\n{}",
