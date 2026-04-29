@@ -13,6 +13,7 @@ from .logger import setup_logging
 from .manager import Manager
 from .routers.backward import router as backward_router
 from .routers.check import router as check_router
+from .routers.extract import router as extract_router
 from .routers.health import router as health_router
 from .settings import Environment, Settings
 
@@ -89,6 +90,11 @@ def create_app(settings: Settings) -> FastAPI:
         check_router,
         prefix="/api",
         tags=["check"],
+    )
+    app.include_router(
+        extract_router,
+        prefix="/api",
+        tags=["extract"],
     )
     app.include_router(
         health_router,
