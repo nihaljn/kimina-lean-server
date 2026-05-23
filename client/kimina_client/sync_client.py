@@ -47,6 +47,7 @@ class KiminaClient(BaseKimina):
         batch_size: int = 8,
         max_workers: int = 5,
         show_progress: bool = True,
+        all_tactics: bool = False
     ) -> CheckResponse:
         if isinstance(snips, str):
             snips = [snips]
@@ -61,7 +62,7 @@ class KiminaClient(BaseKimina):
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = {
                 executor.submit(
-                    self.api_check, batch, timeout, debug, reuse, infotree, True
+                    self.api_check, batch, timeout, debug, reuse, infotree, True, all_tactics
                 ): batch
                 for batch in batches
             }
@@ -87,6 +88,7 @@ class KiminaClient(BaseKimina):
         reuse: bool = True,
         infotree: Infotree | None = None,
         safe: bool = False,
+        all_tactics: bool = False
     ) -> CheckResponse:
         """
         Makes a POST request to /api/check with provided arguments.
@@ -102,6 +104,7 @@ class KiminaClient(BaseKimina):
                 debug=debug,
                 reuse=reuse,
                 infotree=infotree,
+                all_tactics=all_tactics
             ).model_dump()
 
             resp = self._query(url, payload)

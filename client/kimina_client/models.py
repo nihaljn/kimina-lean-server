@@ -131,8 +131,8 @@ class ProofStep(TypedDict):
 
 
 class Tactic(TypedDict):
-    pos: int
-    endPos: int
+    pos: Pos
+    endPos: Pos
     goals: str
     tactic: str
     proofState: NotRequired[int | None]
@@ -226,6 +226,9 @@ class BaseRequest(BaseModel):
     infotree: Infotree | None = Field(
         None,
         description="Level of detail for the info tree.",
+    )
+    all_tactics: bool = Field(
+        False, description="Whether to include state for all tactics in the response"
     )
 
 

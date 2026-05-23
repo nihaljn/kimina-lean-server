@@ -51,6 +51,7 @@ class AsyncKiminaClient(BaseKimina):
         batch_size: int = 8,
         max_workers: int = 5,
         show_progress: bool = True,
+        all_tactics: bool = False
     ) -> CheckResponse:
         if isinstance(snips, str):
             snips = [snips]
@@ -66,7 +67,10 @@ class AsyncKiminaClient(BaseKimina):
         async def worker(batch: list[Snippet]) -> CheckResponse:
             async with sem:
                 return await self.api_check(
-                    batch, timeout, debug, reuse, infotree, True
+                    batch, timeout, debug, reuse, 
+                    infotree=infotree, 
+                    safe=True,
+                    all_tactics=all_tactics
                 )
 
         tasks = [worker(batch) for batch in batches]
@@ -85,6 +89,7 @@ class AsyncKiminaClient(BaseKimina):
         reuse: bool = True,
         infotree: Infotree | None = None,
         safe: bool = False,
+        all_tactics: bool = False
     ) -> CheckResponse:
         try:
             url = self.build_url("/api/check")
@@ -94,6 +99,7 @@ class AsyncKiminaClient(BaseKimina):
                 debug=debug,
                 reuse=reuse,
                 infotree=infotree,
+                all_tactics=all_tactics
             ).model_dump()
 
             resp = await self._query(url, payload)

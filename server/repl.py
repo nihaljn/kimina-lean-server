@@ -154,6 +154,7 @@ class Repl:
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
             preexec_fn=_preexec,
+            limit=1024 * 1024,
         )
 
         self._ps_proc = psutil.Process(self.proc.pid)
@@ -209,6 +210,7 @@ class Repl:
         timeout: float,
         is_header: bool = False,
         infotree: Infotree | None = None,
+        all_tactics: bool = False
     ) -> ReplResponse:
         cmd_response = None
         elapsed_time = (
@@ -218,7 +220,8 @@ class Repl:
 
         try:
             cmd_response, elapsed_time, diagnostics = await asyncio.wait_for(
-                self.send(snippet, is_header=is_header, infotree=infotree),
+                self.send(snippet, is_header=is_header, infotree=infotree,
+                          all_tactics=all_tactics),
                 timeout=timeout,
             )
         except TimeoutError as e:
@@ -247,6 +250,7 @@ class Repl:
         snippet: Snippet,
         is_header: bool = False,
         infotree: Infotree | None = None,
+        all_tactics: bool = False
     ) -> tuple[CommandResponse | Error, float, Diagnostics]:
         await log_snippet(self.uuid, snippet.id, snippet.code)
 
@@ -272,6 +276,9 @@ class Repl:
 
         if infotree:
             input["infotree"] = infotree
+
+        if all_tactics:
+            input["allTactics"] = True
 
         payload = (json.dumps(input, ensure_ascii=False) + "\n\n").encode("utf-8")
 

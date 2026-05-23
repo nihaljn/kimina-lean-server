@@ -50,13 +50,20 @@ def _apply_header_offset(response: ReplResponse, offset: int) -> None:
         _shift_line(end_pos, offset)
 
     sorries = command_response.get("sorries")
-    if not sorries:
-        return
-    for sorry in sorries:
-        pos = sorry.get("pos")
-        _shift_line(pos, offset)
-        end_pos = sorry.get("endPos")
-        _shift_line(end_pos, offset)
+    if sorries:
+        for sorry in sorries:
+            pos = sorry.get("pos")
+            _shift_line(pos, offset)
+            end_pos = sorry.get("endPos")
+            _shift_line(end_pos, offset)
+
+    tactics = command_response.get("tactics")
+    if tactics:
+        for tactic in tactics:
+            pos = tactic.get("pos")
+            _shift_line(pos, offset)
+            end_pos = tactic.get("endPos")
+            _shift_line(end_pos, offset)
 
 
 async def run_checks(
@@ -66,6 +73,7 @@ async def run_checks(
     manager: Manager,
     reuse: bool,
     infotree: Infotree | None = None,
+    all_tactics: bool = False
 ) -> list[ReplResponse]:
     async def run_one(snippet: Snippet) -> ReplResponse:
         repl: Repl | None = None
@@ -119,7 +127,8 @@ async def run_checks(
 
             try:
                 resp = await repl.send_timeout(
-                    Snippet(id=snippet.id, code=body), timeout, infotree=infotree
+                    Snippet(id=snippet.id, code=body), timeout, infotree=infotree,
+                    all_tactics=all_tactics
                 )
                 _apply_header_offset(resp, header_line_count)
             except TimeoutError:
@@ -226,6 +235,7 @@ async def check(
             manager,
             request.reuse,
             request.infotree,
+            request.all_tactics
         )
     )
 
