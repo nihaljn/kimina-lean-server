@@ -38,6 +38,11 @@ class Settings(BaseSettings):
 
     database_url: str | None = None
 
+    # setting that forwards the lean-premise-server URL to REPL as 
+    # PREMISE_SELECTION_API_BASE_URL;
+    # lakefile settings don't automatically reach the REPL
+    premise_selection_api_base_url: str | None = None
+
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", env_prefix="LEAN_SERVER_"
     )
@@ -62,3 +67,9 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+# forward custom settings to the REPL via env variables
+if settings.premise_selection_api_base_url:
+    os.environ["PREMISE_SELECTION_API_BASE_URL"] = (
+        settings.premise_selection_api_base_url
+    )
