@@ -28,6 +28,7 @@ class AsyncKiminaClient(BaseKimina):
         headers: dict[str, str] | None = None,
         http_timeout: int = 600,
         n_retries: int = 3,
+        max_concurrent_requests: int | None = None,
     ):
         super().__init__(
             api_url=api_url,
@@ -39,6 +40,15 @@ class AsyncKiminaClient(BaseKimina):
         self.session = httpx.AsyncClient(
             headers=self.headers,
             timeout=httpx.Timeout(self.http_timeout, read=self.http_timeout),
+        )
+        # cap total in-flight `/api/check` requests for this client
+        # server has a bounded REPL pool (`max_repls ≈ cpu_count - 1`)
+        # without a cap, concurrent callers overflow its queue
+        # and get HTTP 429; using a semaphore to implement the cap
+        self._req_sem = (
+            asyncio.Semaphore(max_concurrent_requests)
+            if max_concurrent_requests and max_concurrent_requests > 0
+            else None
         )
 
     async def check(
@@ -102,7 +112,11 @@ class AsyncKiminaClient(BaseKimina):
                 all_tactics=all_tactics
             ).model_dump()
 
-            resp = await self._query(url, payload)
+            if self._req_sem is not None:
+                async with self._req_sem:
+                    resp = await self._query(url, payload)
+            else:
+                resp = await self._query(url, payload)
             return self.handle(resp, CheckResponse)
         except Exception as e:
             if safe:
