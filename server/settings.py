@@ -32,7 +32,7 @@ class Settings(BaseSettings):
     max_repls: int = max((os.cpu_count() or 1) - 1, 1)
     max_repl_uses: int = -1
     max_repl_mem: int = 12
-    max_wait: int = 60
+    max_wait: int = 180
 
     init_repls: dict[str, int] = {}
 
