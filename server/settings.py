@@ -38,10 +38,15 @@ class Settings(BaseSettings):
 
     database_url: str | None = None
 
-    # setting that forwards the lean-premise-server URL to REPL as 
+    # setting that forwards the lean-premise-server URL to REPL as
     # PREMISE_SELECTION_API_BASE_URL;
     # lakefile settings don't automatically reach the REPL
     premise_selection_api_base_url: str | None = None
+
+    # `set_option` lines prepended to every snippet header, for the same reason:
+    # lakefile `leanOptions` reach `lake build` but not the REPL.
+    # e.g. LEAN_SERVER_LEAN_OPTIONS='{"autoImplicit": "false"}'
+    lean_options: dict[str, str] = {}
 
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", env_prefix="LEAN_SERVER_"

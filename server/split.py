@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 
+from .settings import settings
+
 
 @dataclass(frozen=True)
 class SplitSnippet:
@@ -16,6 +18,9 @@ def split_snippet(code: str) -> SplitSnippet:
       If any import starts with 'import Mathlib', include a single 'import Mathlib' at the top of the header.
       Other imports follow in their original order, without duplicates.
     - Body: the rest of the code starting from the first non-import/non-blank line.
+
+    Any `settings.lean_options` are appended to the header as `set_option` lines,
+    so they apply to every snippet the server sees.
     """
     lines = code.splitlines()
 
@@ -46,6 +51,9 @@ def split_snippet(code: str) -> SplitSnippet:
     if has_mathlib:
         result_header.append("import Mathlib")
     result_header.extend(imports)
+    result_header.extend(
+        f"set_option {name} {value}" for name, value in settings.lean_options.items()
+    )
 
     header = "\n".join(result_header)
     return SplitSnippet(header=header, body=body, header_line_count=i)

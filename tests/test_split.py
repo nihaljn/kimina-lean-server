@@ -113,3 +113,26 @@ import Mathlib.Data.Nat"""
     assert result.header == "import Mathlib\nimport Aesop"
     assert result.body == ""
     assert result.header_line_count == 3
+
+
+def test_lean_options_are_appended_to_the_header(monkeypatch) -> None:
+    from server.settings import settings
+
+    monkeypatch.setattr(settings, "lean_options", {"autoImplicit": "false"})
+    code = "import Mathlib\n\nopen Real\n\ndef foo := 1"
+    result = split_snippet(code)
+    assert result.header.splitlines() == [
+        "import Mathlib",
+        "set_option autoImplicit false",
+    ]
+    # the option is added to the REBUILT header, so the body offset is unchanged
+    assert result.header_line_count == 2
+    assert result.body.splitlines() == ["open Real", "", "def foo := 1"]
+
+
+def test_no_lean_options_leaves_the_header_alone(monkeypatch) -> None:
+    from server.settings import settings
+
+    monkeypatch.setattr(settings, "lean_options", {})
+    result = split_snippet("import Mathlib\n\ndef foo := 1")
+    assert result.header.splitlines() == ["import Mathlib"]
